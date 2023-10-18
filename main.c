@@ -5,6 +5,12 @@
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <ctype.h>
+
+
+void cleanInput(char* input, char* cleaned) {
+   // Here clean the input string and set it to cleaned. Eg. in a for loop iterate the input string and set aplhabets to the string cleaned. You can use the isalpha() from ctype.h.
+}
 
 
 
@@ -39,9 +45,14 @@ int main() {
       read(pipe_fd[0], input, sizeof(input));
       printf("C0: Got string %s\n", input);
 
+      // Here we clean the string
+      char cleaned[100];
+      cleanInput(input, cleaned);
+      printf("C0: Cleaned string: %s\n", cleaned);
+
       // We generate a shared memory segment. We create a new one with all permissions.
       key_t shm_key = ftok("./keyfolder", 0);
-      int shm_id = shmget(shm_key, sizeof(input), IPC_CREAT | 0666);
+      int shm_id = shmget(shm_key, sizeof(cleaned), IPC_CREAT | 0666);
 
       // Handle error in segment creation
       if (shm_id < 0) {
@@ -58,7 +69,7 @@ int main() {
 
       // We copy the string into the memory segment
       printf("C0: Writing into shm\n");
-      strcpy(shm_addr, input);
+      strcpy(shm_addr, cleaned);
       printf("C0: Written\n");
       // Then we detach the segment and close the read end of the pipe
       shmdt(shm_addr);
@@ -90,7 +101,7 @@ int main() {
       printf("Fork failed \n");
       exit(1);
    } else if (p1_pid == 0) {
-      printf("P1: here\n");
+      printf("P1: Calling execvp()\n");
       char* const exec_args[] = { "./find_missing", NULL };
       execvp("./find_missing", exec_args);
       perror("execvp failed\n");

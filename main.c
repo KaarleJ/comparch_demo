@@ -6,6 +6,7 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <ctype.h>
+#include <sys/wait.h>
 
 void cleanInput(char *input, char *cleaned)
 {
@@ -63,10 +64,11 @@ int main()
       pid_t C0 = getpid();
       printf("C0 ID: %d\n", C0);
 
-      // Here we clean the string
+      // Here we clean the string and close the read end of the pipe
       char cleaned[100];
       cleanInput(input, cleaned);
       printf("C0: Cleaned string: %s\n", cleaned);
+      close(pipe_fd[0]);
 
       // We generate a shared memory segment. We create a new one with all permissions.
       key_t shm_key = ftok("./keyfolder", 0);
@@ -87,15 +89,34 @@ int main()
          exit(1);
       }
 
+      // We create a shared memory segment to act as a flag so we can synchronize C0 and P1
+      key_t flag_key = ftok("/keydirectory", 2);
+      int flag_shm_id = shmget(flag_key, sizeof(int), IPC_CREAT | 0666);
+      if (flag_shm_id == -1)
+      {
+         perror("C0: shmget (flag) failed");
+         exit(1);
+      }
+
+      int *flag_ptr = (int *)shmat(flag_shm_id, NULL, 0);
+      *flag_ptr = 0;
+
       // We copy the string into the memory segment
       printf("C0: Writing into shm\n");
       strcpy(shm_addr, cleaned);
       printf("C0: Written\n");
-      // Then we detach the segment and close the read end of the pipe
-      shmdt(shm_addr);
-      close(pipe_fd[0]);
-      printf("C0: Shm detached\n");
 
+      // We wait for the shm flag to be set to 0 by P1 so we can detach the shm and terminate
+      printf("C0: Waiting for P1 to finish\n");
+      while (*flag_ptr == 0)
+      {
+         sleep(1);
+      }
+
+      // Then we detach the segment and terminate the process
+      shmdt(shm_addr);
+      printf("C0: Shm detached\n");
+      printf("C0: Terminating process C0\n");
       exit(0);
    }
    else
@@ -138,8 +159,9 @@ int main()
       // Here we wait for the child process to finish
       wait(NULL);
       wait(NULL);
-      printf("P0: waiting ended\n");
-   }
 
-   return 0;
+      printf("P0: Terminating process P0\n");
+
+      return 0;
+   }
 }

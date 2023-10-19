@@ -9,7 +9,6 @@
 
 void findMissing(char *cleaned)
 {
-  printf("P1: Cleaned string: %s\n", cleaned);
   printf("P1: Missing alphabets: ");
 
   // We initialize an array to keep track of all the found alphabets
@@ -52,12 +51,22 @@ int main()
   }
 
   // Attach the shared memory segment to this process's address-space
-  char* shm_addr = shmat(shm_id, NULL, 0);
+  char *shm_addr = shmat(shm_id, NULL, 0);
   if (shm_addr == (char)-1)
   {
     perror("P1: shmat failed\n");
     exit(1);
   }
+
+  // Attach to the same shared memory flag as in C0
+  key_t flag_key = ftok("/keydirectory", 2);
+  int flag_shm_id = shmget(flag_key, sizeof(int), 0);
+  if (flag_shm_id == -1)
+  {
+    perror("shmget (flag) failed\n");
+    exit(1);
+  }
+  int *flag_ptr = (int *)shmat(flag_shm_id, NULL, 0);
 
   // Read the string from shared memory and set it to a variable
   char received_string[100];
@@ -69,4 +78,8 @@ int main()
 
   // Here we print out the missing alphabetics
   findMissing(received_string);
+
+  printf("P1: Terminating P1 and sending signal to C0 to terminate\n");
+  *flag_ptr = 1;
+  exit(0);
 }

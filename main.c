@@ -113,8 +113,9 @@ int main()
          sleep(1);
       }
 
-      // Then we detach the segment and terminate the process
+      // Then we detach and delete the segment and terminate the process
       shmdt(shm_addr);
+      shmctl(shm_id, IPC_RMID, NULL);
       printf("C0: Shm detached\n");
       printf("C0: Terminating process C0\n");
       exit(0);

@@ -7,14 +7,28 @@
 #include <sys/shm.h>
 #include <ctype.h>
 
+void cleanInput(char *input, char *cleaned)
+{
+   // We initialize variables i and j for iteration
+   int i = 0;
+   int j = 0;
 
-void cleanInput(char* input, char* cleaned) {
-   // Here clean the input string and set it to cleaned. Eg. in a for loop iterate the input string and set aplhabets to the string cleaned. You can use the isalpha() from ctype.h.
+   // Here we iterate and clean out the string
+   while (input[i] != '\0')
+   {
+      if (isalpha(input[i]))
+      {
+         cleaned[j] = input[i];
+         j++;
+      }
+      i++;
+   }
+   // Here we end the string
+   cleaned[j] = '\0';
 }
 
-
-
-int main() {
+int main()
+{
    pid_t p0_pid = getpid();
    printf("Process ID: %d\n", p0_pid);
 
@@ -23,7 +37,8 @@ int main() {
 
    // Here we create a pipe for communication between P0 and C0
    int pipe_fd[2];
-   if (pipe(pipe_fd) == -1) {
+   if (pipe(pipe_fd) == -1)
+   {
       printf("Pipe creation failed");
       exit(1);
    }
@@ -32,18 +47,21 @@ int main() {
    pid_t child_pid = fork();
 
    // Here we execute code conditionally based on the process.
-   if (child_pid < 0) {
+   if (child_pid < 0)
+   {
       // Here forking fails and we exit the program.
       printf("Fork failed \n");
       exit(1);
-   } else if (child_pid == 0) {
-      // Printing the process id for debugging
-      pid_t C0 = getpid();
-      printf("C0 ID: %d\n", C0);
-
+   }
+   else if (child_pid == 0)
+   {
       // Task 2: Here we first read the string from the parent process.
       read(pipe_fd[0], input, sizeof(input));
       printf("C0: Got string %s\n", input);
+
+      // Printing the process id for debugging
+      pid_t C0 = getpid();
+      printf("C0 ID: %d\n", C0);
 
       // Here we clean the string
       char cleaned[100];
@@ -55,14 +73,16 @@ int main() {
       int shm_id = shmget(shm_key, sizeof(cleaned), IPC_CREAT | 0666);
 
       // Handle error in segment creation
-      if (shm_id < 0) {
+      if (shm_id < 0)
+      {
          perror("shmget failed\n");
          exit(1);
       }
 
       // We attach the segment to this process's address-space
-      char* shm_addr = shmat(shm_id, NULL, 0);
-      if (shm_addr == (char*)-1) {
+      char *shm_addr = shmat(shm_id, NULL, 0);
+      if (shm_addr == (char *)-1)
+      {
          perror("shmat failed\n");
          exit(1);
       }
@@ -77,14 +97,16 @@ int main() {
       printf("C0: Shm detached\n");
 
       exit(0);
-   } else {
-      // Printing the process id for debugging
-      pid_t P0 = getpid();
-      printf("P0 ID: %d\n", P0);
-
+   }
+   else
+   {
       // Task 1: Get input
       printf("P0: Enter the test string: ");
       fgets(input, sizeof(input), stdin);
+
+      // Printing the process id for debugging
+      pid_t P0 = getpid();
+      printf("P0 ID: %d\n", P0);
 
       // Here we pass the input string to the child process through the pipe.
       printf("P0: passing string to C0 \n");
@@ -96,23 +118,28 @@ int main() {
    // Task 3: Here we fork a new process and use exec to create a different process
    pid_t p1_pid = fork();
 
-   if (p1_pid < 0) {
+   if (p1_pid < 0)
+   {
       // Here forking fails and we exit the program.
       printf("Fork failed \n");
       exit(1);
-   } else if (p1_pid == 0) {
+   }
+   else if (p1_pid == 0)
+   {
       printf("P1: Calling execvp()\n");
-      char* const exec_args[] = { "./find_missing", NULL };
+      char *const exec_args[] = {"./find_missing", NULL};
       execvp("./find_missing", exec_args);
       perror("execvp failed\n");
       exit(1);
-   } else {
+   }
+   else
+   {
       printf("P0: waiting\n");
-      //Here we wait for the child process to finish
+      // Here we wait for the child process to finish
       wait(NULL);
       wait(NULL);
       printf("P0: waiting ended\n");
    }
-   
+
    return 0;
 }

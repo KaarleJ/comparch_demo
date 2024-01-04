@@ -27,3 +27,6 @@ gcc find_missing.c -o find_missing
 
 Then you can run the program.
 ./main
+
+
+Project contributors: Kaarle Järvinen, Joonas Ukkonen and Josefina Tuomala

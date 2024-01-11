@@ -21,12 +21,12 @@ Task 3 is implemented as a different process P1 by invoking execvp().
 P1 reads the string from the shared memory segment and then prints out all the missing alphabets.
 
 ## Running the program
-To run the program, first compile the source code files.
-gcc main.c -o main
-gcc find_missing.c -o find_missing
+To run the program, first compile the source code files:
+- gcc main.c -o main
+- gcc find_missing.c -o find_missing
 
-Then you can run the program.
-./main
+Then you can run the program:
+- ./main
 
 
 Project contributors: Kaarle Järvinen, Joonas Ukkonen and Josefina Tuomala
